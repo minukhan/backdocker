@@ -3,14 +3,14 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # main 브랜치에 푸시될 때마다 배포 실행
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # 소스 코드 체크아웃
+        uses: actions/checkout@v2
 
 
       - name: Set up JDK 17 # github action에서 jdk 설정12
@@ -19,53 +19,35 @@ jobs:
           distribution: 'corretto'
           java-version: '17'
 
-      - name: Grant execute permission for gradlew
+      - name: Create secret.yml file
         run: |
-          cd ./
-          chmod +x gradlew
+          echo "${{ secrets.SECRET_YML_CONTENTS }}" > src/main/resources/secret.yml
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: |
-          cd ./
-          ./gradlew clean build -x test
-          
+        run: ./gradlew clean build -x test
+
       - name: Docker build & push to Docker repo
         run: |
-         cd ./
-         echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-         docker build --build-arg DEPENDENCY=build/dependency -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }} --platform linux/amd64 .
-         docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
-#
-#      - name: Save EC2 private key to a file
-#        run: echo "${{ secrets.EC2_KEY }}" | base64 -d > /tmp/mainkey.pem
-#
-#      - name: Set permissions for private key
-#        run: chmod 600 /tmp/mainkey.pem  # private key 파일에 대한 권한 설정 (읽기 전용)
-#
-#      - name: Debug - Check private key file
-#        run: |
-#          if [ -f /tmp/mainkey.pem ]; then
-#            echo "Private key file created successfully."
-#          else
-#            echo "Private key file not found."
-#          fi
-#          echo "Key file contents (masked):"
-#          head -c 10 /tmp/mainkey.pem  # 키의 일부만 출력 (보안상)
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker build --build-arg DEPENDENCY=build/dependency -t ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }} --platform linux/amd64 .
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
 
       - name: SSH into EC2 and deploy
-        uses: appleboy/ssh-action@master  # SSH 접속을 위한 GitHub Actions 액션
+        uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}  # EC2 IP 주소를 GitHub Secrets에서 가져옴
-          username: ${{ secrets.EC2_USER }}  # EC2 사용자 이름 (보통 ec2-user 또는 ubuntu) test
-          key: ${{secrets.EC2_KEY }}  # EC2 접속 시 사용할 private key 경로
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
           script: |
-            # 배포 스크립트 실행
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 최신 도커 이미지 pull
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
             
             if [ $(sudo docker ps -q -f "name=mysqlconnect-container") ]; then
               sudo docker stop mysqlconnect-container
               sudo docker rm -f mysqlconnect-container
             fi
             
-            sudo docker run -d -p 8080:8080 --name mysqlconnect-container ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 새로운 컨테이너 실행
+            sudo docker run -d -p 8080:8080 --name mysqlconnect-container ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest

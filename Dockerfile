@@ -15,5 +15,8 @@ WORKDIR /app
 # 빌드된 JAR 파일을 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+# secret.yml 파일 복사
+COPY --from=builder /app/src/main/resources/secret.yml /app/src/main/resources/secret.yml
+
 # 애플리케이션 실행
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
