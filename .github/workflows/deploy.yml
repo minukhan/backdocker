@@ -1,0 +1,33 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 푸시될 때마다 배포 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # 소스 코드 체크아웃
+
+      - name: Save EC2 private key to a file
+        run: echo "${{ secrets.EC2_KEY }}" > /tmp/mainkey.pem  # GitHub Secrets에 저장된 private key를 파일로 저장
+
+      - name: Set permissions for private key
+        run: chmod 600 /tmp/mainkey.pem  # private key 파일에 대한 권한 설정 (읽기 전용)
+
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v0.1.1  # SSH 접속을 위한 GitHub Actions 액션
+        with:
+          host: ${{ secrets.EC2_HOST }}  # EC2 IP 주소를 GitHub Secrets에서 가져옴
+          username: ${{ secrets.EC2_USER }}  # EC2 사용자 이름 (보통 ec2-user 또는 ubuntu)
+          key: /tmp/mainkey.pem  # EC2 접속 시 사용할 private key 경로
+          script: |
+            # 배포 스크립트 실행
+            docker pull ${{ secrets.DOCKER_USERNAME }}/mysqlconnect:latest  # 최신 도커 이미지 pull
+            docker stop mysqlconnect-container || true  # 이전 컨테이너가 실행 중이면 중지
+            docker rm mysqlconnect-container || true  # 이전 컨테이너 삭제
+            docker run -d -p 8080:8080 --name mysqlconnect-container ${{ secrets.DOCKER_USERNAME }}/mysqlconnect:latest  # 새로운 컨테이너 실행
