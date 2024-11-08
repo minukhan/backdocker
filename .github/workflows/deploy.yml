@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@master  # 소스 코드 체크아웃
 
       - name: Save EC2 private key to a file
-        run: echo "${{ secrets.EC2_KEY }}" > /tmp/mainkey.pem  # GitHub Secrets에 저장된 private key를 파일로 저장
+        run: echo "${{ secrets.EC2_KEY }}" | base64 -d > /tmp/mainkey.pem
 
       - name: Set permissions for private key
         run: chmod 600 /tmp/mainkey.pem  # private key 파일에 대한 권한 설정 (읽기 전용)
