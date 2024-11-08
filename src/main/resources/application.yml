@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: mysqlconnect
+
+  config:
+    import: "classpath:secret.yml"  # secret.yml? ???? ??
+
+server:
+  port: 8080
