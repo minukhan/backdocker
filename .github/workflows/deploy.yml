@@ -53,7 +53,7 @@ jobs:
 #          head -c 10 /tmp/mainkey.pem  # 키의 일부만 출력 (보안상)
 
       - name: SSH into EC2 and deploy
-        uses: appleboy/ssh-action@v0.1.1  # SSH 접속을 위한 GitHub Actions 액션
+        uses: appleboy/ssh-action@master  # SSH 접속을 위한 GitHub Actions 액션
         with:
           host: ${{ secrets.EC2_HOST }}  # EC2 IP 주소를 GitHub Secrets에서 가져옴
           username: ${{ secrets.EC2_USER }}  # EC2 사용자 이름 (보통 ec2-user 또는 ubuntu) test
@@ -61,7 +61,11 @@ jobs:
           script: |
             # 배포 스크립트 실행
             echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 최신 도커 이미지 pull
-            docker stop mysqlconnect-container || true  # 이전 컨테이너가 실행 중이면 중지
-            docker rm -f mysqlconnect-container || true  # 이전 컨테이너 삭제
-            docker run -d -p 8080:8080 --name mysqlconnect-container ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 새로운 컨테이너 실행
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 최신 도커 이미지 pull
+            
+            if [ $(sudo docker ps -q -f "name=mysqlconnect-container") ]; then
+              sudo docker stop mysqlconnect-container
+              sudo docker rm -f mysqlconnect-container
+            fi
+            
+            sudo docker run -d -p 8080:8080 --name mysqlconnect-container ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest  # 새로운 컨테이너 실행
