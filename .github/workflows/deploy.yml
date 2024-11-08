@@ -33,7 +33,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.1  # SSH 접속을 위한 GitHub Actions 액션
         with:
           host: ${{ secrets.EC2_HOST }}  # EC2 IP 주소를 GitHub Secrets에서 가져옴
-          username: ${{ secrets.EC2_USER }}  # EC2 사용자 이름 (보통 ec2-user 또는 ubuntu)
+          username: ${{ secrets.EC2_USER }}  # EC2 사용자 이름 (보통 ec2-user 또는 ubuntu) test
           key: /tmp/mainkey.pem  # EC2 접속 시 사용할 private key 경로
           script: |
             # 배포 스크립트 실행
