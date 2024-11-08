@@ -12,7 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up JDK 17
+
+      - name: Set up JDK 17 # github action에서 jdk 설정12
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
