@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v2  # 소스 코드 체크아웃
 
 
-      - name: Set up JDK 17 # github action에서 jdk 설정
+      - name: Set up JDK 17 # github action에서 jdk 설정12
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
